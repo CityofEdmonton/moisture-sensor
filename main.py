@@ -44,6 +44,7 @@ def join_via_abp(lora):
     dev_addr_in_bytes = struct.unpack(">l", binascii.unhexlify(DEV_ADDR))[0]
     nwk_swkey_in_bytes = binascii.unhexlify(NWK_SWKEY)
     app_swkey_in_bytes = binascii.unhexlify(APP_SWKEY)
+    
     # join a network using ABP (Activation By Personalization)
     lora.join(activation=LoRa.ABP, auth=(dev_addr_in_bytes, nwk_swkey_in_bytes, app_swkey_in_bytes))
 
@@ -56,9 +57,22 @@ def create_lora_socket():
 
 
 def read_sensor(sensor, power_pin):
-    power_pin.value(1)
-    utime.sleep(5)
-    return sensor.value()
+    # take multiple readings and take the average to get a more reliable reading
+    READING_DELAY_IN_S = 1
+    NUM_READINGS = 10
+
+    total = 0
+
+    for i in range(0, NUM_READINGS):
+        power_pin.value(1)
+        utime.sleep(READING_DELAY_IN_S)
+        sensor_reading = sensor.value()
+        total += sensor_reading
+        power_pin.value(0)
+
+    average_reading = int(total/NUM_READINGS)
+    
+    return average_reading
 
 
 def main():
@@ -73,7 +87,7 @@ def main():
         pkt = struct.pack(_LORA_PKG_FORMAT, DEVICE_ID, sensor_reading)
         print(pkt)
         lora_socket.send(pkt)
-        power.value(0)
+
 
 
 if __name__ == '__main__':

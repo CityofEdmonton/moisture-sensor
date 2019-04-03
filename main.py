@@ -9,6 +9,11 @@ import struct
 _LORA_PKG_FORMAT = "BI"
 DEVICE_ID = 0x01
 
+# LoRa constants
+FREQ = 90310000
+DEV_ADDR = '26021345'
+NWK_SWKEY = 'B005F2A05084CBF0CBD38003161F4AC2'
+APP_SWKEY = '8CB2F240C6080A064ACE12A95F9F29E4'
 
 def setup_adc():
     adc = machine.ADC()
@@ -37,11 +42,11 @@ def setup_single_lora_channel():
 
 def join_abp(lora):
     # create an ABP authentication params
-    dev_addr = struct.unpack(">l", binascii.unhexlify('26021345'))[0]
-    nwk_swkey = binascii.unhexlify('B005F2A05084CBF0CBD38003161F4AC2')
-    app_swkey = binascii.unhexlify('8CB2F240C6080A064ACE12A95F9F29E4')
+    dev_addr_in_bytes = struct.unpack(">l", binascii.unhexlify(DEV_ADDR))[0]
+    nwk_swkey_in_bytes = binascii.unhexlify(NWK_SWKEY)
+    app_swkey_in_bytes = binascii.unhexlify(APP_SWKEY)
     # join a network using ABP (Activation By Personalization)
-    lora.join(activation=LoRa.ABP, auth=(dev_addr, nwk_swkey, app_swkey))
+    lora.join(activation=LoRa.ABP, auth=(dev_addr_in_bytes, nwk_swkey_in_bytes, app_swkey_in_bytes))
 
 
 def create_lora_socket():

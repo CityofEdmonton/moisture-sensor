@@ -37,10 +37,9 @@ def setup_single_lora_channel():
     for channel in range(0, 8):
         lora.add_channel(channel, frequency=903100000, dr_min=0, dr_max=3)
 
-    join_abp(lora)
+    return lora
 
-
-def join_abp(lora):
+def join_via_abp(lora):
     # create an ABP authentication params
     dev_addr_in_bytes = struct.unpack(">l", binascii.unhexlify(DEV_ADDR))[0]
     nwk_swkey_in_bytes = binascii.unhexlify(NWK_SWKEY)
@@ -65,7 +64,8 @@ def read_sensor(sensor, power_pin):
 def main():
     sensor = setup_adc()
     power = setup_power_pin()
-    setup_single_lora_channel()
+    lora = setup_single_lora_channel()
+    join_via_abp(lora)
     lora_socket = create_lora_socket()
 
     while True:

@@ -15,6 +15,8 @@ DEV_ADDR = '26021345'
 NWK_SWKEY = 'B005F2A05084CBF0CBD38003161F4AC2'
 APP_SWKEY = '8CB2F240C6080A064ACE12A95F9F29E4'
 
+READING_FREQ_IN_MIN = 10
+
 def setup_adc():
     adc = machine.ADC()
     adc.init(bits=12)
@@ -74,20 +76,25 @@ def read_sensor(sensor, power_pin):
     
     return average_reading
 
-
 def main():
+    
+    # setup lopy4 pins
     sensor = setup_adc()
     power = setup_power_pin()
+
+    # setup LoRa
     lora = setup_single_lora_channel()
     join_via_abp(lora)
     lora_socket = create_lora_socket()
 
-    while True:
-        sensor_reading = read_sensor(sensor, power)
-        pkt = struct.pack(_LORA_PKG_FORMAT, DEVICE_ID, sensor_reading)
-        print(pkt)
-        lora_socket.send(pkt)
+    # read sensor and send via LoRa
+    sensor_reading = read_sensor(sensor, power)
+    pkt = struct.pack(_LORA_PKG_FORMAT, DEVICE_ID, sensor_reading)
+    lora_socket.send(pkt)
+    utime.sleep(1)
 
+    # put lopy4 to sleep until next reading
+    machine.deepsleep(READING_FREQ_IN_MIN*60*1000)
 
 
 if __name__ == '__main__':

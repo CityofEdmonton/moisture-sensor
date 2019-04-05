@@ -35,7 +35,7 @@ def setup_single_lora_channel():
     # remove all the channels
     for channel in range(0, 72):
         lora.remove_channel(channel)
-    # set all channels to the same frequency (must be before sending the OTAA join request)
+    # set all channels to the same frequency
     for channel in range(0, 8):
         lora.add_channel(channel, frequency=903100000, dr_min=0, dr_max=3)
 

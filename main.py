@@ -15,7 +15,7 @@ DEV_ADDR = '26021345'
 NWK_SWKEY = 'B005F2A05084CBF0CBD38003161F4AC2'
 APP_SWKEY = '8CB2F240C6080A064ACE12A95F9F29E4'
 
-READING_FREQ_IN_MIN = 0.16
+READING_FREQ_IN_MIN = 1
 
 def setup_adc():
     adc = machine.ADC()
@@ -93,23 +93,21 @@ def main():
 
     #intialize lora object
     lora = LoRa(mode=LoRa.LORAWAN, region=LoRa.US915)
+    lora = setup_single_lora_channel(lora)
+    lora.nvram_restore()
 
     if machine.reset_cause() == machine.DEEPSLEEP_RESET:
         print(machine.wake_reason())
         sensor_reading = read_sensor(sensor, power)
-        lora.nvram_restore()
         send_message(sensor_reading)
-        lora.nvram_save()
         utime.sleep(1)
-        machine.deepsleep(int(READING_FREQ_IN_MIN*60*1000))
     else:
         print('power on')
         print(machine.reset_cause())
-        lora = setup_single_lora_channel(lora)
         join_via_abp(lora)
-        lora_socket = create_lora_socket()
-        lora.nvram_save()
-        machine.deepsleep(int(READING_FREQ_IN_MIN*60*1000))
+
+    lora.nvram_save()
+    machine.deepsleep(int(READING_FREQ_IN_MIN*60*1000))
 
 
 

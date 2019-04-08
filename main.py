@@ -96,16 +96,16 @@ def main():
     lora = setup_single_lora_channel(lora)
     lora.nvram_restore()
 
-    if machine.reset_cause() == machine.DEEPSLEEP_RESET:
-        print(machine.wake_reason())
-        sensor_reading = read_sensor(sensor, power)
-        send_message(sensor_reading)
-        utime.sleep(1)
-    else:
-        print('power on')
-        print(machine.reset_cause())
+    if not lora.has_joined():
         join_via_abp(lora)
+        while not lora.has_joined():
+            utime.sleep(2.5)
+            print('Not yet joined...')
+        print('Join successful!')
 
+    sensor_reading = read_sensor(sensor, power)
+    send_message(sensor_reading)
+    utime.sleep(1)
     lora.nvram_save()
     machine.deepsleep(int(READING_FREQ_IN_MIN*60*1000))
 

@@ -11,11 +11,11 @@ DEVICE_ID = 0x01
 
 # LoRa constants
 FREQ = 90310000
-DEV_ADDR = '26021345'
-NWK_SWKEY = 'B005F2A05084CBF0CBD38003161F4AC2'
-APP_SWKEY = '8CB2F240C6080A064ACE12A95F9F29E4'
+DEV_ADDR = '<DEVICE ADDRESS>'
+NWK_SWKEY = '<NETWORK SESSION KEY>'
+APP_SWKEY = '<APP SESSION KEY>'
 
-READING_FREQ_IN_MIN = 10
+READING_FREQ_IN_MIN = 0.16
 
 def setup_adc():
     adc = machine.ADC()
@@ -30,8 +30,7 @@ def setup_power_pin():
     return power
 
 
-def setup_single_lora_channel():
-    lora = LoRa(mode=LoRa.LORAWAN, region=LoRa.US915)
+def setup_single_lora_channel(lora):
     # remove all the channels
     for channel in range(0, 72):
         lora.remove_channel(channel)
@@ -57,9 +56,18 @@ def create_lora_socket():
     lora_socket.setblocking(False)
     return lora_socket
 
-
+def send_message(sensor_reading):
+    print('sending message')
+    lora_socket = create_lora_socket()
+    pkt = struct.pack(_LORA_PKG_FORMAT, DEVICE_ID, sensor_reading)
+    try:
+        lora_socket.send(pkt)
+    except Exception as e:
+        print(e)
+    
 def read_sensor(sensor, power_pin):
     # take multiple readings and take the average to get a more reliable reading
+    print('reading sensor')
     READING_DELAY_IN_S = 1
     NUM_READINGS = 10
 
@@ -69,6 +77,7 @@ def read_sensor(sensor, power_pin):
         power_pin.value(1)
         utime.sleep(READING_DELAY_IN_S)
         sensor_reading = sensor.value()
+        print('Moisture value: {0}'.format(sensor.value()))
         total += sensor_reading
         power_pin.value(0)
 
@@ -76,25 +85,31 @@ def read_sensor(sensor, power_pin):
     
     return average_reading
 
+
 def main():
     
     # setup lopy4 pins
     sensor = setup_adc()
     power = setup_power_pin()
 
-    # setup LoRa
-    lora = setup_single_lora_channel()
-    join_via_abp(lora)
-    lora_socket = create_lora_socket()
+    #intialize lora object
+    lora = LoRa(mode=LoRa.LORAWAN, region=LoRa.US915)
+    lora = setup_single_lora_channel(lora)
+    lora.nvram_restore()
 
-    # read sensor and send via LoRa
+    if not lora.has_joined():
+        join_via_abp(lora)
+        while not lora.has_joined():
+            utime.sleep(2.5)
+            print('Not yet joined...')
+        print('Join successful!')
+
     sensor_reading = read_sensor(sensor, power)
-    pkt = struct.pack(_LORA_PKG_FORMAT, DEVICE_ID, sensor_reading)
-    lora_socket.send(pkt)
+    send_message(sensor_reading)
     utime.sleep(1)
+    lora.nvram_save()
+    machine.deepsleep(int(READING_FREQ_IN_MIN*60*1000))
 
-    # put lopy4 to sleep until next reading
-    machine.deepsleep(READING_FREQ_IN_MIN*60*1000)
 
 
 if __name__ == '__main__':

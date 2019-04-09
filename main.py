@@ -4,9 +4,11 @@ import utime
 import socket
 import binascii
 import struct
+from L76GNSS import L76GNSS
+from pytrack import Pytrack
 
 # package header, B: 1 byte for deviceID, I: 1 byte for int
-_LORA_PKG_FORMAT = "BI"
+_LORA_PKG_FORMAT = "BIII"
 DEVICE_ID = 0x01
 
 # LoRa constants
@@ -20,12 +22,12 @@ READING_FREQ_IN_MIN = 0.16
 def setup_adc():
     adc = machine.ADC()
     adc.init(bits=12)
-    sensor = adc.channel(pin='P13', attn=machine.ADC.ATTN_11DB)
+    sensor = adc.channel(pin='P19', attn=machine.ADC.ATTN_11DB)
     return sensor
 
 
 def setup_power_pin():
-    power = machine.Pin('P19', machine.Pin.OUT)
+    power = machine.Pin('P11', machine.Pin.OUT)
     power.value(0)
     return power
 
@@ -56,10 +58,25 @@ def create_lora_socket():
     lora_socket.setblocking(False)
     return lora_socket
 
-def send_message(sensor_reading):
+def format_gps_for_lora(gps_object):
+    lat = gps_object.coordinates()[0]
+    long = gps_object.coordinates()[1]
+
+    lat = int(lat * 100000)
+    long = int(long * 10000 * -1)
+
+    return (lat, long)
+
+def send_message(sensor_reading, gps_object):
     print('sending message')
     lora_socket = create_lora_socket()
-    pkt = struct.pack(_LORA_PKG_FORMAT, DEVICE_ID, sensor_reading)
+    try:
+        formatted_gps_object = format_gps_for_lora(gps_object)
+    except Exception as e:
+        print("Error: {0}".format(e))
+        formatted_gps_object = (0,0)
+    print(formatted_gps_object)
+    pkt = struct.pack(_LORA_PKG_FORMAT, DEVICE_ID, sensor_reading, formatted_gps_object[0], formatted_gps_object[1])
     try:
         lora_socket.send(pkt)
     except Exception as e:
@@ -85,9 +102,16 @@ def read_sensor(sensor, power_pin):
     
     return average_reading
 
+def setup_gps():
+    py = Pytrack()
+    l76 = L76GNSS(py, timeout=30)
+
+    return l76
 
 def main():
-    
+
+    gps = setup_gps()
+
     # setup lopy4 pins
     sensor = setup_adc()
     power = setup_power_pin()
@@ -105,7 +129,7 @@ def main():
         print('Join successful!')
 
     sensor_reading = read_sensor(sensor, power)
-    send_message(sensor_reading)
+    send_message(sensor_reading, gps)
     utime.sleep(1)
     lora.nvram_save()
     machine.deepsleep(int(READING_FREQ_IN_MIN*60*1000))

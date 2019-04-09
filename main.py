@@ -77,6 +77,7 @@ def read_sensor(sensor, power_pin):
         power_pin.value(1)
         utime.sleep(READING_DELAY_IN_S)
         sensor_reading = sensor.value()
+        print('Moisture value: {0}'.format(sensor.value()))
         total += sensor_reading
         power_pin.value(0)
 

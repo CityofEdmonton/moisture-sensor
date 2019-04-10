@@ -25,13 +25,6 @@ def setup_adc():
     sensor = adc.channel(pin='P19', attn=machine.ADC.ATTN_11DB)
     return sensor
 
-
-def setup_power_pin():
-    power = machine.Pin('P11', machine.Pin.OUT)
-    power.value(0)
-    return power
-
-
 def setup_single_lora_channel(lora):
     # remove all the channels
     for channel in range(0, 72):
@@ -82,7 +75,7 @@ def send_message(sensor_reading, gps_object):
     except Exception as e:
         print(e)
     
-def read_sensor(sensor, power_pin):
+def read_sensor(sensor):
     # take multiple readings and take the average to get a more reliable reading
     print('Reading sensor...')
     READING_DELAY_IN_S = 0.25
@@ -91,12 +84,10 @@ def read_sensor(sensor, power_pin):
     total = 0
 
     for i in range(0, NUM_READINGS):
-        power_pin.value(1)
         utime.sleep(READING_DELAY_IN_S)
         sensor_reading = sensor.value()
         print('Moisture value: {0}'.format(sensor.value()))
         total += sensor_reading
-        power_pin.value(0)
 
     average_reading = int(total/NUM_READINGS)
     print('Average value: {0}'.format(average_reading))
@@ -115,7 +106,6 @@ def main():
 
     # setup lopy4 pins
     sensor = setup_adc()
-    power = setup_power_pin()
 
     #intialize lora object
     lora = LoRa(mode=LoRa.LORAWAN, region=LoRa.US915)
@@ -129,7 +119,7 @@ def main():
             print('Not yet joined...')
         print('Join successful!')
 
-    sensor_reading = read_sensor(sensor, power)
+    sensor_reading = read_sensor(sensor)
     send_message(sensor_reading, gps)
     utime.sleep(1)
     lora.nvram_save()

@@ -84,8 +84,8 @@ def send_message(sensor_reading, gps_object):
     
 def read_sensor(sensor, power_pin):
     # take multiple readings and take the average to get a more reliable reading
-    print('reading sensor')
-    READING_DELAY_IN_S = 1
+    print('Reading sensor...')
+    READING_DELAY_IN_S = 0.25
     NUM_READINGS = 10
 
     total = 0
@@ -99,7 +99,8 @@ def read_sensor(sensor, power_pin):
         power_pin.value(0)
 
     average_reading = int(total/NUM_READINGS)
-    
+    print('Average value: {0}'.format(average_reading))
+
     return average_reading
 
 def setup_gps():

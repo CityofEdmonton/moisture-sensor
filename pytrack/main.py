@@ -69,7 +69,9 @@ def send_message(sensor_reading, gps_object):
     print('sending message')
     lora_socket = create_lora_socket()
     formatted_gps_object = format_gps_for_lora(gps_object)
-    pkt = struct.pack(_LORA_PKG_FORMAT, DEVICE_ID, sensor_reading, formatted_gps_object[0], formatted_gps_object[1])
+    latitude = formatted_gps_object[0]
+    longitude = formatted_gps_object[1]
+    pkt = struct.pack(_LORA_PKG_FORMAT, DEVICE_ID, sensor_reading, latitude, longitude)
     try:
         lora_socket.send(pkt)
     except Exception as e:

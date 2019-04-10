@@ -62,20 +62,20 @@ def format_gps_for_lora(gps_object):
     lat = gps_object.coordinates()[0]
     long = gps_object.coordinates()[1]
 
-    lat = int(lat * 100000)
-    long = int(long * 10000 * -1)
+    if(lat is not None and long is not None):
+        lat = int(lat * 100000)
+        long = int(long * 10000 * -1)
+    else:
+        lat = 0
+        long = 0
 
+    print("Lat: {0}, Long: {1}".format(lat,long))    
     return (lat, long)
 
 def send_message(sensor_reading, gps_object):
     print('sending message')
     lora_socket = create_lora_socket()
-    try:
-        formatted_gps_object = format_gps_for_lora(gps_object)
-    except Exception as e:
-        print("Error: {0}".format(e))
-        formatted_gps_object = (0,0)
-    print(formatted_gps_object)
+    formatted_gps_object = format_gps_for_lora(gps_object)
     pkt = struct.pack(_LORA_PKG_FORMAT, DEVICE_ID, sensor_reading, formatted_gps_object[0], formatted_gps_object[1])
     try:
         lora_socket.send(pkt)

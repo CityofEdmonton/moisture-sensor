@@ -36,7 +36,7 @@ def setup_single_lora_channel(lora):
         lora.remove_channel(channel)
     # set all channels to the same frequency
     for channel in range(0, 8):
-        lora.add_channel(channel, frequency=903100000, dr_min=0, dr_max=3)
+        lora.add_channel(channel, frequency=FREQ, dr_min=0, dr_max=3)
 
     return lora
 
